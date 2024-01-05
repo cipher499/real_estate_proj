@@ -1,18 +1,25 @@
 import streamlit as st
 import pickle
+import pandas as pd 
+import numpy as np
 
 st.set_page_config(page_title="Viz Demo")
-st.title('Page 2')
+st.title('Price Predictor')
 
+# load the dataframe
 with open('df.pkl', 'rb') as file:
     df = pickle.load(file)
 
+# load the pipeline
+with open('pipeline.pkl', 'rb') as file:
+    pipeline = pickle.load(file)
+
 
 # ['property_type', 'sector', 'bedrooms', 'bathrooms', 'balconies',
-#        'age_possession', 'built_up_area', 'study room', 'servant room',
-#        'store room', 'furnishing_type', 'luxury_category', 'floor_category']
+#  'age_possession', 'built_up_area', 'study room', 'servant room',
+#  'store room', 'furnishing_type', 'luxury_category', 'floor_category']
 
-st.dataframe(df)
+# st.dataframe(df)
 
 st.header('Enter your inputs')
 
@@ -31,3 +38,21 @@ furnishing_type = st.selectbox('Furnishing Type', sorted(df.furnishing_type.uniq
 luxury_type = st.selectbox('Luxury Type', sorted(df.luxury_category.unique().tolist()))
 floor = st.selectbox('Floor', sorted(df.floor_category.unique().tolist()))
 
+if st.button('Predict Price'):
+    # create a dataframe
+    input = [[property_type, sector, bedrooms, bathrooms, balconies, property_age, built_up_area, study_room, servant_room, store_room, 
+             furnishing_type, luxury_type, floor]]
+    columns = ['property_type', 'sector', 'bedrooms', 'bathrooms', 'balconies',
+        'age_possession', 'built_up_area', 'study room', 'servant room',
+        'store room', 'furnishing_type', 'luxury_category', 'floor_category']
+
+    df_input = pd.DataFrame(input, columns=columns)
+    # st.dataframe(df_input)
+    
+    # feed the dataframe to the pipeline and obtain the model
+    base_price = np.expm1(pipeline.predict(df_input))
+    low = round(base_price[0] - 0.22, 2)
+    high = round(base_price[0] + 0.22, 2)
+
+    # display
+    st.text('The price of the property is between {} Cr and {} Cr.'.format(low, high))
